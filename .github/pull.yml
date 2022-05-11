@@ -1,6 +1,6 @@
 version: "1"
 rules:
   - base: develop
-    upstream: null:develop
+    upstream: RocketChat:develop
     mergeMethod: merge
     mergeUnstable: true
