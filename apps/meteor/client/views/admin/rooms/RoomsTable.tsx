@@ -7,6 +7,8 @@ import type { ReactElement, MutableRefObject } from 'react';
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import RoomRow from './RoomRow';
+import RoomsTableFilters from './RoomsTableFilters';
 import GenericNoResults from '../../../components/GenericNoResults';
 import {
 	GenericTable,
@@ -17,8 +19,6 @@ import {
 } from '../../../components/GenericTable';
 import { usePagination } from '../../../components/GenericTable/hooks/usePagination';
 import { useSort } from '../../../components/GenericTable/hooks/useSort';
-import RoomRow from './RoomRow';
-import RoomsTableFilters from './RoomsTableFilters';
 
 type RoomFilters = {
 	searchText: string;
@@ -134,11 +134,7 @@ const RoomsTable = ({ reload }: { reload: MutableRefObject<() => void> }): React
 				<>
 					<GenericTable>
 						<GenericTableHeader>{headers}</GenericTableHeader>
-						<GenericTableBody>
-							{data.rooms?.map((room) => (
-								<RoomRow key={room._id} room={room} />
-							))}
-						</GenericTableBody>
+						<GenericTableBody>{data.rooms?.map((room) => <RoomRow key={room._id} room={room} />)}</GenericTableBody>
 					</GenericTable>
 					<Pagination
 						divider

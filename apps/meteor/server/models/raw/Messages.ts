@@ -29,15 +29,15 @@ import type {
 	ModifyResult,
 } from 'mongodb';
 
+import { BaseRaw } from './BaseRaw';
 import { otrSystemMessages } from '../../../app/otr/lib/constants';
 import { readSecondaryPreferred } from '../../database/readSecondaryPreferred';
-import { BaseRaw } from './BaseRaw';
 
 type DeepWritable<T> = T extends (...args: any) => any
 	? T
 	: {
 			-readonly [P in keyof T]: DeepWritable<T[P]>;
-	  };
+		};
 
 export class MessagesRaw extends BaseRaw<IMessage> implements IMessagesModel {
 	constructor(db: Db, trash?: Collection<RocketChatRecordDeleted<IMessage>>) {
