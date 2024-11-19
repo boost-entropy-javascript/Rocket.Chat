@@ -7,6 +7,7 @@ import {
 	isChatUpdateProps,
 	isChatGetThreadsListProps,
 	isChatDeleteProps,
+	isChatSyncMessagesProps,
 } from '@rocket.chat/rest-typings';
 import { escapeRegExp } from '@rocket.chat/string-helpers';
 import { Meteor } from 'meteor/meteor';
@@ -21,6 +22,7 @@ import { processWebhookMessage } from '../../../lib/server/functions/processWebh
 import { executeSendMessage } from '../../../lib/server/methods/sendMessage';
 import { executeUpdateMessage } from '../../../lib/server/methods/updateMessage';
 import { applyAirGappedRestrictionsValidation } from '../../../license/server/airGappedRestrictionsWrapper';
+import { pinMessage } from '../../../message-pin/server/pinMessage';
 import { OEmbed } from '../../../oembed/server/server';
 import { executeSetReaction } from '../../../reactions/server/setReaction';
 import { settings } from '../../../settings/server';
@@ -73,22 +75,32 @@ API.v1.addRoute(
 
 API.v1.addRoute(
 	'chat.syncMessages',
-	{ authRequired: true },
+	{ authRequired: true, validateParams: isChatSyncMessagesProps },
 	{
 		async get() {
-			const { roomId, lastUpdate } = this.queryParams;
+			const { roomId, lastUpdate, count, next, previous, type } = this.queryParams;
 
 			if (!roomId) {
-				throw new Meteor.Error('error-roomId-param-not-provided', 'The required "roomId" query param is missing.');
+				throw new Meteor.Error('error-param-required', 'The required "roomId" query param is missing');
 			}
 
-			if (!lastUpdate) {
-				throw new Meteor.Error('error-lastUpdate-param-not-provided', 'The required "lastUpdate" query param is missing.');
-			} else if (isNaN(Date.parse(lastUpdate))) {
-				throw new Meteor.Error('error-roomId-param-invalid', 'The "lastUpdate" query parameter must be a valid date.');
+			if (!lastUpdate && !type) {
+				throw new Meteor.Error('error-param-required', 'The "type" or "lastUpdate" parameters must be provided');
 			}
 
-			const result = await Meteor.callAsync('messages/get', roomId, { lastUpdate: new Date(lastUpdate) });
+			if (lastUpdate && isNaN(Date.parse(lastUpdate))) {
+				throw new Meteor.Error('error-lastUpdate-param-invalid', 'The "lastUpdate" query parameter must be a valid date');
+			}
+
+			const getMessagesQuery = {
+				...(lastUpdate && { lastUpdate: new Date(lastUpdate) }),
+				...(next && { next }),
+				...(previous && { previous }),
+				...(count && { count }),
+				...(type && { type }),
+			};
+
+			const result = await Meteor.callAsync('messages/get', roomId, getMessagesQuery);
 
 			if (!result) {
 				return API.v1.failure();
@@ -96,8 +108,9 @@ API.v1.addRoute(
 
 			return API.v1.success({
 				result: {
-					updated: await normalizeMessagesForUser(result.updated, this.userId),
-					deleted: result.deleted,
+					...(result.updated && { updated: await normalizeMessagesForUser(result.updated, this.userId) }),
+					...(result.deleted && { deleted: result.deleted }),
+					...(result.cursor && { cursor: result.cursor }),
 				},
 			});
 		},
@@ -145,7 +158,7 @@ API.v1.addRoute(
 				throw new Meteor.Error('error-message-not-found', 'The provided "messageId" does not match any existing message.');
 			}
 
-			const pinnedMessage = await Meteor.callAsync('pinMessage', msg);
+			const pinnedMessage = await pinMessage(msg, this.userId);
 
 			const [message] = await normalizeMessagesForUser([pinnedMessage], this.userId);
 
