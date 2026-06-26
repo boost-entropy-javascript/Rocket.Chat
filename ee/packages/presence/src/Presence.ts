@@ -51,6 +51,8 @@ export class Presence extends ServiceClass implements IPresence {
 
 	private expirationTimeout?: NodeJS.Timeout;
 
+	private expirationScheduleToken?: symbol;
+
 	constructor() {
 		super();
 
@@ -134,10 +136,19 @@ export class Presence extends ServiceClass implements IPresence {
 	}
 
 	private async setupNextExpiration(): Promise<void> {
+		const token = Symbol();
+		this.expirationScheduleToken = token;
+
+		const next = await Users.findNextStatusExpiration();
+
+		// A newer reschedule replaced our token while we awaited the lookup; let it arm the timer.
+		if (this.expirationScheduleToken !== token) {
+			return;
+		}
+
 		clearTimeout(this.expirationTimeout);
 		this.expirationTimeout = undefined;
 
-		const next = await Users.findNextStatusExpiration();
 		if (!next?.statusExpiresAt) {
 			return;
 		}
@@ -178,7 +189,9 @@ export class Presence extends ServiceClass implements IPresence {
 
 	override async stopped(): Promise<void> {
 		this.reaper.stop();
+		this.expirationScheduleToken = undefined;
 		clearTimeout(this.expirationTimeout);
+		this.expirationTimeout = undefined;
 		clearTimeout(this.lostConTimeout);
 	}
 
