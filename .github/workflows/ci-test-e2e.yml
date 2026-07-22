@@ -123,7 +123,7 @@ jobs:
           username: ${{ secrets.CR_USER }}
           password: ${{ secrets.CR_PAT }}
 
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup NodeJS
         uses: ./.github/actions/setup-node
@@ -191,9 +191,14 @@ jobs:
           # the deprecation logger log without throwing. Other suites use the
           # docker-compose default of TEST_MODE='true'.
           TEST_MODE: ${{ startsWith(inputs.type, 'api') && 'api' || 'true' }}
+          TEST_TYPE: ${{ inputs.type }}
         run: |
-          # when we are testing CE, we only need to start the rocketchat container
-          DEBUG_LOG_LEVEL=${DEBUG_LOG_LEVEL:-0} docker compose -f docker-compose-ci.yml up -d rocketchat --wait
+          # when we are testing CE, we only need to start the rocketchat container (plus mock-server for the api suite)
+          services=(rocketchat)
+          if [ "$TEST_TYPE" == "api" ]; then
+            services+=(mock-server)
+          fi
+          DEBUG_LOG_LEVEL=${DEBUG_LOG_LEVEL:-0} docker compose -f docker-compose-ci.yml up -d "${services[@]}" --wait
 
       - name: Start containers for EE
         if: inputs.release == 'ee'
