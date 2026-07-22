@@ -197,20 +197,20 @@
 		"@types/chart.js": "^2.9.41",
 		"@types/js-yaml": "^4.0.9",
 		"@types/node": "~22.19.21",
-		"eslint": "~9.39.5",
+		"eslint": "~10.7.0",
 		"eslint-plugin-you-dont-need-lodash-underscore": "~6.14.0",
 		"ts-node": "^10.9.2",
 		"turbo": "2.9.14",
 		"typescript": "~5.9.3"
 	},
-	"packageManager": "yarn@4.12.0",
+	"packageManager": "yarn@4.17.1",
 	"engines": {
 		"node": "22.22.3",
-		"yarn": "4.12.0"
+		"yarn": "4.17.1"
 	},
 	"volta": {
 		"node": "22.22.3",
-		"yarn": "4.12.0"
+		"yarn": "4.17.1"
 	},
 	"houston": {
 		"minTag": "0.55.0-rc.0",
